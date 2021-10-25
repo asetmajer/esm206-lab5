@@ -51,4 +51,102 @@ To call elements from a list:
 #### Now, using in-line referencing
 Typing `r` is like starting a mini code chunk in your text. For example:
 
-Mean otter length is `r round(otter_ci$estimate, 1)` inches.
+Mean otter length is `r round(otter_ci$estimate, 1)` inches with a 95% confidence interval of [`r round(otter_ci$conf.int[1], 1)`, `r round(otter_ci$conf.int[2],1)`] inches.
+
+## Part 2: Two-Sample t-test
+
+### Example 1
+Make two mock samples, and ask the question: do we have sufficient evidence to make us reflect the null hypothesis that these samples were drawn from populations with the same mean?
+
+```{r}
+# Make my mock samples
+oak_trees <- c(20,19,24,28,34,12,15,25)
+
+pine_trees <- c(60,43,56,21,68,50,36,46)
+
+# Two-sample t-test
+tree_t <- t.test(oak_trees, pine_trees)
+
+# Null hypothesis: means heights are the same
+# ie.: Trees are drawn from populations with the same mean height
+```
+If samples were drawn from two populations with the same mean height, there is a 0.1% chance that the sample means are at least as different as this by random chance. 
+
+^ Dont write this in a report that is just how you say it and interpret it.Instead write:
+
+The mean heights of oak and pine trees were (X +- Y) and (X +- Y), respectively, and the difference was significant (t(`r round(tree_t$parameter, 1)`) = `r round(tree_t$statistic,1)`, p = `r round(tree_t$p.value, 3)`.
+
+`t(df) = t-statistic, p=p-value`
+
+*AVOID*: p = 0
+When this get really small (usually p < 0.001) just write that instead of, for example, p = 0.00000003 .... its even possible to code this into the text. 
+
+## Part 3: Another t-test with cars data
+
+Using `mpg` dataset.
+
+### Take a look at the data
+
+```{r}
+compact_suv <- mpg %>% 
+  filter(class %in% c("compact", "suv"))
+
+# check that filter worked to see what is included in the specified column
+unique(compact_suv$class)
+
+```
+
+Create a histogram of city gas mileage (cty) faceted by class starting from compact_suv.(and a qq graph)
+
+```{r}
+ggplot(data=compact_suv, aes(x=cty)) +
+  geom_histogram(bins = 12) +
+    facet_wrap(~ class)
+
+ggplot(data = compact_suv, aes(sample = cty)) +
+  geom_qq() +
+  facet_wrap(~ class)
+```
+
+Find some summary statistics for each group.
+
+```{r}
+car_stats <- compact_suv %>% 
+  group_by(class) %>% 
+  summarize(
+    mean_city= round(mean(cty), 2), 
+    sd_city= round(sd(cty),2),
+    sample_size = n()
+  )
+
+# only round values if this were to be the final table... if you are going to do calculations from this object do not round.
+
+car_stats
+```
+
+The t.test() function REALLY wants vectors of things. Use the `pull()` function to pull out a vector from a data frame.
+
+Remember can look up info about a function by typing `?functionname` in the console. For example `?pull`.
+
+```{r}
+compact_sample <- compact_suv %>% 
+  filter(class == "compact") %>% 
+  pull(cty) # this makes a vector of those values.
+```
+
+# Your turn: do the same thing to get a vector of city gas mileages for SUVs 
+```{r}
+suv_sample <- compact_suv %>% 
+  filter(class == "suv") %>% 
+  pull(cty)
+
+```
+
+H0 (aka null hypothesis): Mean city gas mileages for SUVs and compact cards are the same
+
+```{r}
+t.test(compact_sample, suv_sample)
+```
+We reject the null hypothesis that the mean city cas mileage is the same. 
+
+There is a significant difference in mean city cas mileage for SUVs and compact cars (t(df)....
